@@ -18,17 +18,19 @@ export class TelegramIpMiddleware implements NestMiddleware {
     use(req: Request, res: Response, next: NextFunction) {
         const clientIp = this.getClientIp(req);
 
-        // 1. Allow Telegram IPs (for webhooks)
-        if (this.isTelegramIp(clientIp)) {
+        // 1. Allow GET requests by key without signature
+        const urlSegments = req.originalUrl.split('?')[0].split('/').filter(s => s !== '');
+        const isGetByKey = req.method === 'GET' && (
+            (urlSegments.length === 2 && urlSegments[0] === 'accounts' && !['get-available-accounts', 'user-keys'].includes(urlSegments[1])) ||
+            (urlSegments.length === 3 && urlSegments[0] === 'accounts' && urlSegments[1] === 'key') ||
+            (urlSegments.length === 3 && urlSegments[0] === 'accounts' && urlSegments[1] === 'key-check-ban')
+        );
+
+        if (isGetByKey) {
             return next();
         }
 
-        // 2. Allow GET requests by key without signature
-        if (req.method === 'GET' && (req.originalUrl.startsWith('/accounts/key/') || (req.originalUrl.startsWith('/accounts/') && req.originalUrl.split('/').length === 3))) {
-            return next();
-        }
-
-        // 3. Verify HMAC Signature
+        // 2. Verify HMAC Signature
         const signature = req.headers['x-signature'] as string;
         const timestamp = req.headers['x-timestamp'] as string;
 
