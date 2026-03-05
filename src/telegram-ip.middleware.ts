@@ -23,7 +23,12 @@ export class TelegramIpMiddleware implements NestMiddleware {
             return next();
         }
 
-        // 2. Verify HMAC Signature
+        // 2. Allow GET requests by key without signature
+        if (req.method === 'GET' && (req.originalUrl.startsWith('/accounts/key/') || (req.originalUrl.startsWith('/accounts/') && req.originalUrl.split('/').length === 3))) {
+            return next();
+        }
+
+        // 3. Verify HMAC Signature
         const signature = req.headers['x-signature'] as string;
         const timestamp = req.headers['x-timestamp'] as string;
 

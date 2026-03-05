@@ -21,10 +21,6 @@ export class AccountsService {
         });
     }
 
-    async findAll(): Promise<Account[]> {
-        return this.prisma.account.findMany();
-    }
-
     async findOne(key: string) {
         return this.prisma.account.findUnique({
             where: { key },
@@ -82,7 +78,10 @@ export class AccountsService {
         }
 
         if (!account) throw new NotFoundException('Account with this key not found');
-        return account;
+
+        // Exclude sensitive fields from the response
+        const { id, telegramUserId, telegramUser, ...rest } = account;
+        return rest;
     }
 
     async isAccountBanned(phone: string): Promise<boolean> {
@@ -174,7 +173,50 @@ export class AccountsService {
     }
 
     async getAvailableAccounts() {
-        return this.prisma.account.findMany();
+        return this.prisma.account.findMany({
+            select: {
+                phone: true,
+                key: true,
+                brand: true,
+                manufacturer: true,
+                model: true,
+                board: true,
+                hardware: true,
+                product: true,
+                device: true,
+                fingerprint: true,
+                release: true,
+                sdk: true,
+                security_patch: true,
+                android_id: true,
+                correlation_id: true,
+                // telegramUserId and telegramUser are excluded
+            }
+        });
+    }
+
+    async findAll(): Promise<any[]> {
+        return this.prisma.account.findMany({
+            select: {
+                id: true, // Keep ID for admin bot functionality
+                phone: true,
+                key: true,
+                telegramUserId: true,
+                brand: true,
+                manufacturer: true,
+                model: true,
+                board: true,
+                hardware: true,
+                product: true,
+                device: true,
+                fingerprint: true,
+                release: true,
+                sdk: true,
+                security_patch: true,
+                android_id: true,
+                correlation_id: true,
+            }
+        });
     }
 
     async findKeysByTelegramId(telegramId: string) {
